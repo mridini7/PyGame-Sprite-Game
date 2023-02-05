@@ -1,0 +1,199 @@
+import random
+import pygame
+import os
+
+from os import path
+img_dir = path.join(path.dirname(__file__), 'img')
+
+
+# constants for screen
+WIDTH = 800
+HEIGHT = 600
+FPS = 30
+
+# define useful colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+AQUA = (0, 255, 255)
+MAGENTA = (255, 0, 255)
+GOLD = (255, 215, 0)
+
+# set up assets folders
+# Mac: /users/mridinikulkarni/Documents/img/p1_jump.png
+game_folder = os.path.dirname(__file__)
+img_folder = os.path.join(game_folder, "img")
+img_path = os.path.join(img_folder, "p1_jump.png")
+
+
+class Player(pygame.sprite.Sprite):
+    # sprite for the player
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+#       self.image = pygame.image.load(img_path).convert()
+        self.image = pygame.Surface((50, 50))
+        self.image = pygame.transform.scale(player_img, (75,50))
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+#       self.rect.center = (WIDTH / 2, HEIGHT / 2)
+#       self.y_speed = 5
+        self.rect.bottomleft = (0, HEIGHT)
+
+    def change_position(self, left, right):
+        if left > 0:
+            self.rect.x -= left
+        elif right > 0:
+             self.rect.x += right
+        else:
+            self.rect.x += 0
+         #        self.rect.y += self.y_speed
+         #       if self.rect.bottom > HEIGHT - 200:
+         #          self.y_speed = -5
+         #        if self.rect.top < 200:
+         #             self.y_speed = 5
+        if self.rect.left > WIDTH:
+             self.rect.right = WIDTH
+         #           self.rect.right = 0
+        if self.rect.right == 0:
+            self.rect.right = 0
+
+    def update(self):
+#        self.rect.y += self.y_speed
+#       if self.rect.bottom > HEIGHT - 200:
+#          self.y_speed = -5
+#        if self.rect.top < 200:
+#             self.y_speed = 5
+
+        if self.rect.left > WIDTH:
+            self.rect.right = WIDTH
+#           self.rect.right = 0
+        if self.rect.right == 0:
+            self.rect.right = 0
+
+    def shoot(self):
+        bullet = Bullet(self.rect.centerx, self.rect.top)
+        all_sprites.add(bullet)
+        bullets.add(bullet)
+
+
+class Mob(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+#       self.image = pygame.image.load(img_path).convert()
+        self.image = meteor_img
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randrange(0, WIDTH - self.rect.width)
+        self.rect.y = random.randrange(-100, -40)
+        self.yspeed = random.randrange(4, 9)
+        self.xspeed = random.randrange(-4, 4)
+
+
+    def update(self):
+        self.rect.y += self.yspeed
+        self.rect.x += self.xspeed
+        if self.rect.top > HEIGHT + 10:
+            self.rect.x = random.randrange(0, WIDTH - self.rect.width)
+            self.rect.y = random.randrange(-100, -40)
+            self.yspeed = random.randrange(1, 8)
+            self.xspeed = random.randrange(-3, 3)
+
+
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+#       self.image = pygame.image.load(img_path).convert()
+        self.image = laser_img
+        self.image.set_colorkey(BLACK )
+        self.rect = self.image.get_rect()
+
+        self.rect.bottom = y
+        self.rect.centerx = x
+        self.yspeed = -10
+
+    def update(self):
+        self.rect.y += self.yspeed
+        #  kill if moves off top of the screen
+        if self.rect.bottom < 0:
+            self.kill()
+
+
+# initialize pygame and create window
+pygame.init()
+pygame.mixer.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("My Game")
+clock = pygame.time.Clock()
+
+#load all backgrounds
+background = pygame.image.load(path.join(img_dir, "spaceshooter.png")).convert()
+background_rect = background.get_rect()
+player_img = pygame.image.load(path.join(img_dir, "playerShip1_red.png")).convert()
+meteor_img = pygame.image.load(path.join(img_dir, "meteorBrown_med1.png")).convert()
+laser_img = pygame.image.load(path.join(img_dir, "laserRed16.png")).convert()
+
+all_sprites = pygame.sprite.Group()
+mobs = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
+player = Player()
+all_sprites.add(player)
+score = 0
+for i in range(8):
+    m = Mob()
+    all_sprites.add(m)
+    mobs.add(m)
+
+# Game loop
+running = True
+while running:
+
+    # keep running ath the right speed
+    clock.tick(FPS)
+    # process input(events)
+    for event in pygame.event.get():
+        # check for closing window( the x)
+        if event.type == pygame.QUIT:
+            running = False
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_RIGHT]:
+        player.change_position(0,50)
+    if keys [pygame.K_LEFT]:
+        player.change_position(50, 0)
+    if keys[pygame.K_SPACE]:
+        player.shoot()
+#        elif event.type == pygame.KEYDOWN:
+#            if event.key == pygame.K_SPACE:
+#               player.shoot()
+#            if event.key == pygame.K_RIGHT:
+#                player.change_position(0, 50)
+#           if event.key == pygame.K_LEFT:
+#                player.change_position(50, 0)
+
+    #update
+    all_sprites.update()
+    #check to see if mob hit a player
+    hits = pygame.sprite.spritecollide(player, mobs, False)
+    if hits:
+        running = False
+    # check to see if bullet hit mob
+    bullethits = pygame.sprite.groupcollide(bullets, mobs, True, True)
+    for bullethit in bullethits:
+        m = Mob()
+        all_sprites.add(m)
+        mobs.add(m)
+    if bullethits:
+        score += 1
+
+
+    #draw/render
+    screen.fill(BLACK)
+    screen.blit(background, background_rect)
+    all_sprites.draw(screen) #draw all sprites on screen
+    #Flip display after drawing everything
+    pygame.display.flip()
+
+print("you hit " + str(score) + " meteors :)")
+pygame.quit()
